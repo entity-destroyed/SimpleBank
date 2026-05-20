@@ -9,6 +9,7 @@ import hu.bme.aut.simplebank.exception.ConflictException;
 import hu.bme.aut.simplebank.exception.ResourceNotFoundException;
 import hu.bme.aut.simplebank.repository.AppUserRepository;
 import hu.bme.aut.simplebank.security.UserDetailsImpl;
+import hu.bme.aut.simplebank.util.TestEntities;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,20 +55,8 @@ class AppUserServiceTest {
 
     @BeforeEach
     void setUp() {
-        adminEntity = new AppUser();
-        adminEntity.setId(1L);
-        adminEntity.setName("Admin");
-        adminEntity.setEmail("admin@bank.local");
-        adminEntity.setPasswordHash("hash");
-        adminEntity.setRole(AppUser.Role.ADMIN);
-
-        clientEntity = new AppUser();
-        clientEntity.setId(2L);
-        clientEntity.setName("Client");
-        clientEntity.setEmail("client@bank.local");
-        clientEntity.setPasswordHash("hash");
-        clientEntity.setRole(AppUser.Role.CLIENT);
-
+        adminEntity = TestEntities.user(1L, "admin@bank.local", AppUser.Role.ADMIN);
+        clientEntity = TestEntities.user(2L, "client@bank.local", AppUser.Role.CLIENT);
         adminPrincipal = new UserDetailsImpl(adminEntity);
         clientPrincipal = new UserDetailsImpl(clientEntity);
     }

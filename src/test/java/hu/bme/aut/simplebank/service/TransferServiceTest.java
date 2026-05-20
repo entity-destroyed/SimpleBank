@@ -14,6 +14,7 @@ import hu.bme.aut.simplebank.exception.InvalidAccountStateException;
 import hu.bme.aut.simplebank.repository.AccountRepository;
 import hu.bme.aut.simplebank.repository.TransactionRepository;
 import hu.bme.aut.simplebank.security.UserDetailsImpl;
+import hu.bme.aut.simplebank.util.TestEntities;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,36 +64,15 @@ class TransferServiceTest {
 
     @BeforeEach
     void setUp() {
-        admin = user(1L, "admin@bank.local", AppUser.Role.ADMIN);
-        client = user(2L, "client@bank.local", AppUser.Role.CLIENT);
-        other = user(3L, "other@bank.local", AppUser.Role.CLIENT);
+        admin = TestEntities.user(1L, "admin@bank.local", AppUser.Role.ADMIN);
+        client = TestEntities.user(2L, "client@bank.local", AppUser.Role.CLIENT);
+        other = TestEntities.user(3L, "other@bank.local", AppUser.Role.CLIENT);
         adminPrincipal = new UserDetailsImpl(admin);
         clientPrincipal = new UserDetailsImpl(client);
         otherPrincipal = new UserDetailsImpl(other);
 
-        sourceAcc = account(10L, client, new BigDecimal("100.00"), "EUR", Account.Status.ACTIVE);
-        targetAcc = account(11L, other, new BigDecimal("0.00"), "EUR", Account.Status.ACTIVE);
-    }
-
-    private static AppUser user(Long id, String email, AppUser.Role role) {
-        AppUser u = new AppUser();
-        u.setId(id);
-        u.setName("user-" + id);
-        u.setEmail(email);
-        u.setPasswordHash("hash");
-        u.setRole(role);
-        return u;
-    }
-
-    private static Account account(Long id, AppUser owner, BigDecimal balance, String currency, Account.Status status) {
-        Account a = new Account();
-        a.setId(id);
-        a.setAccountNumber("HU" + id);
-        a.setBalance(balance);
-        a.setCurrency(currency);
-        a.setStatus(status);
-        a.setOwner(owner);
-        return a;
+        sourceAcc = TestEntities.account(10L, client, new BigDecimal("100.00"), "EUR", Account.Status.ACTIVE);
+        targetAcc = TestEntities.account(11L, other, new BigDecimal("0.00"), "EUR", Account.Status.ACTIVE);
     }
 
     private TransactionResponse responseStub() {

@@ -13,7 +13,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -45,12 +44,10 @@ public class SecurityConfig {
 
         http.csrf(AbstractHttpConfigurer::disable)
             .cors(Customizer.withDefaults())
-            .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
             .authorizeHttpRequests(auth -> {
                 auth.requestMatchers("/api/auth/**").permitAll();
-                auth.requestMatchers("/h2-console/**").permitAll();
                 auth.requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN");
                 auth.requestMatchers(HttpMethod.DELETE, "/api/users/**", "/api/accounts/**").hasRole("ADMIN");
                 auth.requestMatchers("/api/accounts/*/status").hasRole("ADMIN");

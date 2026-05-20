@@ -1,0 +1,802 @@
+{
+	"info": {
+		"_postman_id": "c76b104d-463b-4427-ad00-29588ffa21e6",
+		"name": "SimpleBank",
+		"description": "REST API collection for the SimpleBank Spring Boot project.\n\nStack: Spring Boot 4 / Spring MVC / Spring Security (JWT) / Spring Data JPA / H2.\n\n**Roles**\n- `ADMIN` — full read/write on all resources.\n- `CLIENT` — only own resources.\n\n**Getting started**\n1. Run the app (`mvn spring-boot:run`) — it boots on `http://localhost:8080`.\n2. A bootstrap admin is auto-created on first startup using `application.properties` (`admin@simplebank.local` / `Admin123`).\n3. Call **Auth → Login (admin)** — the test script writes the JWT into the `token` collection variable, and the collection-level Bearer auth picks it up automatically for every other request.\n4. Use **Users → Register user** (ADMIN-only) to create a CLIENT, then **Auth → Login (client)** to switch roles.\n\n**Collection variables**\n- `baseUrl` — defaults to `http://localhost:8080`\n- `adminEmail`, `adminPassword` — match `admin.bootstrap.*` in `application.properties`\n- `clientEmail`, `clientPassword` — for the CLIENT user you register\n- `token` — set automatically by the Login test script\n- `userId`, `accountId`, `targetAccountId`, `cardId` — IDs you fill in (or pass through test scripts) after creating resources",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "21528464"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login (admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+									"var body = pm.response.json();",
+									"if (body && body.token) {",
+									"    pm.collectionVariables.set('token', body.token);",
+									"    console.log('Stored admin JWT in {{token}} (role=' + body.role + ')');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Authenticate as the bootstrap admin. Response: `{ token, role }`. The test script writes `token` into the collection variable for subsequent requests."
+					},
+					"response": []
+				},
+				{
+					"name": "Login (client)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+									"var body = pm.response.json();",
+									"if (body && body.token) {",
+									"    pm.collectionVariables.set('token', body.token);",
+									"    console.log('Stored client JWT in {{token}} (role=' + body.role + ')');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{clientEmail}}\",\n  \"password\": \"{{clientPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Authenticate as the CLIENT user you registered via `Users → Register user`."
+					},
+					"response": []
+				},
+				{
+					"name": "Login (invalid credentials) - 401",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"wrong-password\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Should return 401 Unauthorized."
+					},
+					"response": []
+				}
+			],
+			"description": "Public endpoints under `/api/auth/**` — not secured."
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Register user (ADMIN)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+									"var body = pm.response.json();",
+									"if (body && body.id) {",
+									"    pm.collectionVariables.set('userId', body.id);",
+									"    console.log('Stored userId = ' + body.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Alice Client\",\n  \"email\": \"{{clientEmail}}\",\n  \"password\": \"{{clientPassword}}\",\n  \"role\": \"CLIENT\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users"
+							]
+						},
+						"description": "Create a new user. Requires `ROLE_ADMIN`. `role` is one of `ADMIN`, `CLIENT`."
+					},
+					"response": []
+				},
+				{
+					"name": "List all users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users"
+							]
+						},
+						"description": "ADMIN: returns every user. CLIENT: returns only their own profile (single-element list)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get own profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me"
+							]
+						},
+						"description": "Resolves the caller from the JWT and returns their `UserResponse`."
+					},
+					"response": []
+				},
+				{
+					"name": "Update own profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Alice Renamed\",\n  \"email\": \"{{clientEmail}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me"
+							]
+						},
+						"description": "Update name/email on the currently authenticated user."
+					},
+					"response": []
+				},
+				{
+					"name": "Get user by id (ADMIN)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{userId}}"
+							]
+						},
+						"description": "ADMIN can fetch anyone. CLIENT can only fetch themselves (otherwise 403)."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete user (ADMIN)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{userId}}"
+							]
+						},
+						"description": "Hard-delete a user. ADMIN only. Returns 204 No Content."
+					},
+					"response": []
+				}
+			],
+			"description": "`/api/users` — registration is ADMIN-only (URL rule). `DELETE` is ADMIN-only. Other endpoints require authentication; ownership is enforced in the service layer."
+		},
+		{
+			"name": "Accounts",
+			"item": [
+				{
+					"name": "Create account",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+									"var body = pm.response.json();",
+									"if (body && body.id) {",
+									"    pm.collectionVariables.set('accountId', body.id);",
+									"    console.log('Stored accountId = ' + body.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"currency\": \"HUF\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/accounts",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"accounts"
+							]
+						},
+						"description": "Creates a new ACTIVE account in the given ISO-4217 currency (3 uppercase letters). Owner is the calling user. Starting balance is 0."
+					},
+					"response": []
+				},
+				{
+					"name": "Create second account (for transfer target)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+									"var body = pm.response.json();",
+									"if (body && body.id) {",
+									"    pm.collectionVariables.set('targetAccountId', body.id);",
+									"    console.log('Stored targetAccountId = ' + body.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"currency\": \"HUF\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/accounts",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"accounts"
+							]
+						},
+						"description": "Create a second account so we have something to transfer to. Stores its id as `{{targetAccountId}}`."
+					},
+					"response": []
+				},
+				{
+					"name": "List accounts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/accounts",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"accounts"
+							]
+						},
+						"description": "ADMIN: all accounts. CLIENT: only their own."
+					},
+					"response": []
+				},
+				{
+					"name": "Get account by id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/accounts/{{accountId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"accounts",
+								"{{accountId}}"
+							]
+						},
+						"description": "CLIENT must own the account; otherwise 403."
+					},
+					"response": []
+				},
+				{
+					"name": "Update account status (ADMIN)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"LOCKED\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/accounts/{{accountId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"accounts",
+								"{{accountId}}",
+								"status"
+							]
+						},
+						"description": "ADMIN-only. `status` is one of `ACTIVE`, `LOCKED`, `CLOSED`. Locking an account blocks deposits and transfers."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete account (ADMIN)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/accounts/{{accountId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"accounts",
+								"{{accountId}}"
+							]
+						},
+						"description": "ADMIN-only. Returns 204 No Content."
+					},
+					"response": []
+				}
+			],
+			"description": "`/api/accounts` — `PATCH /:id/status` and `DELETE` are ADMIN-only. Creation and reads are role-aware in the service."
+		},
+		{
+			"name": "Cards",
+			"item": [
+				{
+					"name": "Create card (ADMIN)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+									"var body = pm.response.json();",
+									"if (body && body.id) {",
+									"    pm.collectionVariables.set('cardId', body.id);",
+									"    console.log('Stored cardId = ' + body.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"accountId\": {{accountId}},\n  \"dailyLimit\": 50000.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/cards",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"cards"
+							]
+						},
+						"description": "Issue a new card for the given account. CLIENT must own the account. `dailyLimit` is BigDecimal ≥ 0."
+					},
+					"response": []
+				},
+				{
+					"name": "List own cards",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/cards",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"cards"
+							]
+						},
+						"description": "Returns all cards visible to the caller (own cards for CLIENT, everyone's for ADMIN per service logic)."
+					},
+					"response": []
+				},
+				{
+					"name": "Update card daily limit",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dailyLimit\": 100000.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/cards/{{cardId}}/limit",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"cards",
+								"{{cardId}}",
+								"limit"
+							]
+						},
+						"description": "Replace the card's daily spending limit. Ownership enforced in service."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete card",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/cards/{{cardId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"cards",
+								"{{cardId}}"
+							]
+						},
+						"description": "Remove a card. Ownership enforced in service. Returns 204."
+					},
+					"response": []
+				}
+			],
+			"description": "`/api/cards` — bank cards belonging to an account. Ownership is enforced in the service."
+		},
+		{
+			"name": "Transactions",
+			"item": [
+				{
+					"name": "Deposit",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"accountId\": {{accountId}},\n  \"amount\": 250000.00,\n  \"message\": \"Initial deposit\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/transactions/deposit",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"transactions",
+								"deposit"
+							]
+						},
+						"description": "Credit funds into an account. Target account must be ACTIVE. Amount > 0 (BigDecimal). Returns 201 with the persisted `TransactionResponse`."
+					},
+					"response": []
+				},
+				{
+					"name": "Transfer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"sourceAccountId\": {{accountId}},\n  \"targetAccountId\": {{targetAccountId}},\n  \"amount\": 10000.00,\n  \"message\": \"Rent\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/transactions/transfer",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"transactions",
+								"transfer"
+							]
+						},
+						"description": "Atomic transfer between two accounts.\n\nService enforces:\n- source ownership (CLIENT) or ADMIN bypass\n- both accounts ACTIVE\n- same currency\n- source ≠ target\n- sufficient funds (otherwise 400 / InsufficientFundsException)\n\nThe whole flow runs in a single `@Transactional` block; any failure rolls back balance changes AND the transaction record."
+					},
+					"response": []
+				},
+				{
+					"name": "Transfer - insufficient funds (expect 400)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"sourceAccountId\": {{accountId}},\n  \"targetAccountId\": {{targetAccountId}},\n  \"amount\": 999999999.00,\n  \"message\": \"Should fail\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/transactions/transfer",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"transactions",
+								"transfer"
+							]
+						},
+						"description": "Sanity check for the `InsufficientFundsException` → 400 mapping in `GlobalExceptionHandler`."
+					},
+					"response": []
+				},
+				{
+					"name": "List transactions for account",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/transactions/account/{{accountId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"transactions",
+								"account",
+								"{{accountId}}"
+							]
+						},
+						"description": "All transactions where this account is source or target. Ownership enforced in service (ADMIN sees any)."
+					},
+					"response": []
+				}
+			],
+			"description": "`/api/transactions` — money movement. All endpoints require auth; ownership rules live in `TransferService`."
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "adminEmail",
+			"value": "admin@simplebank.local",
+			"type": "string"
+		},
+		{
+			"key": "adminPassword",
+			"value": "Admin123",
+			"type": "string"
+		},
+		{
+			"key": "clientEmail",
+			"value": "alice@example.com",
+			"type": "string"
+		},
+		{
+			"key": "clientPassword",
+			"value": "Client123!",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "accountId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "targetAccountId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cardId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

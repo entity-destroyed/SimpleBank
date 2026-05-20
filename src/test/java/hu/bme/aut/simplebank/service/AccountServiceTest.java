@@ -10,6 +10,7 @@ import hu.bme.aut.simplebank.exception.ResourceNotFoundException;
 import hu.bme.aut.simplebank.repository.AccountRepository;
 import hu.bme.aut.simplebank.repository.TransactionRepository;
 import hu.bme.aut.simplebank.security.UserDetailsImpl;
+import hu.bme.aut.simplebank.util.TestEntities;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,40 +55,15 @@ class AccountServiceTest {
 
     @BeforeEach
     void setUp() {
-        admin = new AppUser();
-        admin.setId(1L);
-        admin.setName("Admin");
-        admin.setEmail("admin@bank.local");
-        admin.setPasswordHash("hash");
-        admin.setRole(AppUser.Role.ADMIN);
-
-        client = new AppUser();
-        client.setId(2L);
-        client.setName("Client");
-        client.setEmail("client@bank.local");
-        client.setPasswordHash("hash");
-        client.setRole(AppUser.Role.CLIENT);
-
-        otherClient = new AppUser();
-        otherClient.setId(3L);
-        otherClient.setName("Other");
-        otherClient.setEmail("other@bank.local");
-        otherClient.setPasswordHash("hash");
-        otherClient.setRole(AppUser.Role.CLIENT);
-
+        admin = TestEntities.user(1L, "admin@bank.local", AppUser.Role.ADMIN);
+        client = TestEntities.user(2L, "client@bank.local", AppUser.Role.CLIENT);
+        otherClient = TestEntities.user(3L, "other@bank.local", AppUser.Role.CLIENT);
         adminPrincipal = new UserDetailsImpl(admin);
         clientPrincipal = new UserDetailsImpl(client);
     }
 
     private Account ownedBy(AppUser owner, Long id) {
-        Account a = new Account();
-        a.setId(id);
-        a.setAccountNumber("HU" + id);
-        a.setBalance(BigDecimal.ZERO);
-        a.setCurrency("HUF");
-        a.setStatus(Account.Status.ACTIVE);
-        a.setOwner(owner);
-        return a;
+        return TestEntities.activeHufAccount(id, owner);
     }
 
 

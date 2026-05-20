@@ -4,6 +4,7 @@ import hu.bme.aut.simplebank.controller.dto.LoginRequest;
 import hu.bme.aut.simplebank.controller.dto.LoginResponse;
 import hu.bme.aut.simplebank.entity.AppUser;
 import hu.bme.aut.simplebank.repository.AppUserRepository;
+import hu.bme.aut.simplebank.util.MockMvcTestSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,12 +13,10 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 import tools.jackson.databind.ObjectMapper;
 
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -46,17 +45,9 @@ class AuthControllerMockMvcTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders
-                .webAppContextSetup(context)
-                .apply(springSecurity())
-                .build();
-
-        AppUser user = new AppUser();
-        user.setName("Test User");
-        user.setEmail(EMAIL);
-        user.setPasswordHash(passwordEncoder.encode(PASSWORD));
-        user.setRole(AppUser.Role.CLIENT);
-        userRepository.save(user);
+        mockMvc = MockMvcTestSupport.buildMockMvc(context);
+        MockMvcTestSupport.persistUser(userRepository, passwordEncoder,
+                "Test User", EMAIL, PASSWORD, AppUser.Role.CLIENT);
     }
 
     @Test

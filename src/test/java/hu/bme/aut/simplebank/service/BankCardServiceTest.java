@@ -11,6 +11,7 @@ import hu.bme.aut.simplebank.exception.ResourceNotFoundException;
 import hu.bme.aut.simplebank.repository.AccountRepository;
 import hu.bme.aut.simplebank.repository.BankCardRepository;
 import hu.bme.aut.simplebank.security.UserDetailsImpl;
+import hu.bme.aut.simplebank.util.TestEntities;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,55 +61,17 @@ class BankCardServiceTest {
 
     @BeforeEach
     void setUp() {
-        admin = new AppUser();
-        admin.setId(1L);
-        admin.setRole(AppUser.Role.ADMIN);
-        admin.setEmail("a@b");
-        admin.setPasswordHash("x");
-        admin.setName("Admin");
-
-        client = new AppUser();
-        client.setId(2L);
-        client.setRole(AppUser.Role.CLIENT);
-        client.setEmail("c@b");
-        client.setPasswordHash("x");
-        client.setName("Client");
-
-        otherClient = new AppUser();
-        otherClient.setId(3L);
-        otherClient.setRole(AppUser.Role.CLIENT);
-        otherClient.setEmail("o@b");
-        otherClient.setPasswordHash("x");
-        otherClient.setName("Other");
-
+        admin = TestEntities.user(1L, "a@b", AppUser.Role.ADMIN);
+        client = TestEntities.user(2L, "c@b", AppUser.Role.CLIENT);
+        otherClient = TestEntities.user(3L, "o@b", AppUser.Role.CLIENT);
         adminPrincipal = new UserDetailsImpl(admin);
         clientPrincipal = new UserDetailsImpl(client);
-
-        clientAccount = new Account();
-        clientAccount.setId(10L);
-        clientAccount.setAccountNumber("HU10");
-        clientAccount.setBalance(BigDecimal.ZERO);
-        clientAccount.setCurrency("HUF");
-        clientAccount.setStatus(Account.Status.ACTIVE);
-        clientAccount.setOwner(client);
-
-        otherAccount = new Account();
-        otherAccount.setId(11L);
-        otherAccount.setAccountNumber("HU11");
-        otherAccount.setBalance(BigDecimal.ZERO);
-        otherAccount.setCurrency("HUF");
-        otherAccount.setStatus(Account.Status.ACTIVE);
-        otherAccount.setOwner(otherClient);
+        clientAccount = TestEntities.activeHufAccount(10L, client);
+        otherAccount = TestEntities.activeHufAccount(11L, otherClient);
     }
 
     private BankCard cardOn(Account account, Long id) {
-        BankCard c = new BankCard();
-        c.setId(id);
-        c.setCardNumber("0000111122223333");
-        c.setExpirationDate(LocalDate.now().plusYears(3));
-        c.setDailyLimit(new BigDecimal("1000.00"));
-        c.setAccount(account);
-        return c;
+        return TestEntities.card(id, account, new BigDecimal("1000.00"));
     }
 
 

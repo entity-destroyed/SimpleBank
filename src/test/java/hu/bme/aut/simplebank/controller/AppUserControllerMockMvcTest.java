@@ -1,11 +1,10 @@
 package hu.bme.aut.simplebank.controller;
 
-import hu.bme.aut.simplebank.controller.dto.LoginRequest;
-import hu.bme.aut.simplebank.controller.dto.LoginResponse;
 import hu.bme.aut.simplebank.controller.dto.user.CreateUserRequest;
 import hu.bme.aut.simplebank.controller.dto.user.UpdateProfileRequest;
 import hu.bme.aut.simplebank.entity.AppUser;
 import hu.bme.aut.simplebank.repository.AppUserRepository;
+import hu.bme.aut.simplebank.util.MockMvcTestSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,13 +12,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 import tools.jackson.databind.ObjectMapper;
 
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -54,35 +50,16 @@ class AppUserControllerMockMvcTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders
-                .webAppContextSetup(context)
-                .apply(springSecurity())
-                .build();
-
-        persist("Test Admin", ADMIN_EMAIL, ADMIN_PASSWORD, AppUser.Role.ADMIN);
-        AppUser client = persist("Test Client", CLIENT_EMAIL, CLIENT_PASSWORD, AppUser.Role.CLIENT);
+        mockMvc = MockMvcTestSupport.buildMockMvc(context);
+        MockMvcTestSupport.persistUser(userRepository, passwordEncoder,
+                "Test Admin", ADMIN_EMAIL, ADMIN_PASSWORD, AppUser.Role.ADMIN);
+        AppUser client = MockMvcTestSupport.persistUser(userRepository, passwordEncoder,
+                "Test Client", CLIENT_EMAIL, CLIENT_PASSWORD, AppUser.Role.CLIENT);
         clientId = client.getId();
     }
 
-    private AppUser persist(String name, String email, String password, AppUser.Role role) {
-        AppUser u = new AppUser();
-        u.setName(name);
-        u.setEmail(email);
-        u.setPasswordHash(passwordEncoder.encode(password));
-        u.setRole(role);
-        return userRepository.save(u);
-    }
-
     private String login(String email, String password) throws Exception {
-        LoginRequest req = new LoginRequest(email, password);
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isOk())
-                .andReturn();
-        LoginResponse body = objectMapper.readValue(
-                result.getResponse().getContentAsString(), LoginResponse.class);
-        return "Bearer " + body.token();
+        return MockMvcTestSupport.bearerToken(mockMvc, objectMapper, email, password);
     }
 
     @Test

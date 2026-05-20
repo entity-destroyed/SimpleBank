@@ -1,7 +1,5 @@
 package hu.bme.aut.simplebank.controller;
 
-import hu.bme.aut.simplebank.controller.dto.LoginRequest;
-import hu.bme.aut.simplebank.controller.dto.LoginResponse;
 import hu.bme.aut.simplebank.controller.dto.transaction.TransferRequest;
 import hu.bme.aut.simplebank.entity.Account;
 import hu.bme.aut.simplebank.entity.AppUser;
@@ -9,6 +7,7 @@ import hu.bme.aut.simplebank.entity.Transaction;
 import hu.bme.aut.simplebank.repository.AccountRepository;
 import hu.bme.aut.simplebank.repository.AppUserRepository;
 import hu.bme.aut.simplebank.repository.TransactionRepository;
+import hu.bme.aut.simplebank.util.MockMvcTestSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import tools.jackson.databind.ObjectMapper;
 
@@ -27,7 +25,6 @@ import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -63,36 +60,21 @@ class TransferRollbackIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders
-                .webAppContextSetup(context)
-                .apply(springSecurity())
-                .build();
+        mockMvc = MockMvcTestSupport.buildMockMvc(context);
 
         when(transactionRepository.save(any(Transaction.class)))
                 .thenThrow(new RuntimeException("simulated persistence failure"));
 
-        AppUser u = new AppUser();
-        u.setName("Rollback Client");
-        u.setEmail(EMAIL);
-        u.setPasswordHash(passwordEncoder.encode(PASSWORD));
-        u.setRole(AppUser.Role.CLIENT);
-        userId = userRepository.save(u).getId();
+        AppUser u = MockMvcTestSupport.persistUser(userRepository, passwordEncoder,
+                "Rollback Client", EMAIL, PASSWORD, AppUser.Role.CLIENT);
+        userId = u.getId();
 
-        Account source = new Account();
-        source.setAccountNumber("ROLL-SRC-" + System.nanoTime());
-        source.setBalance(new BigDecimal("100.0000"));
-        source.setCurrency("EUR");
-        source.setStatus(Account.Status.ACTIVE);
-        source.setOwner(u);
-        sourceId = accountRepository.save(source).getId();
-
-        Account target = new Account();
-        target.setAccountNumber("ROLL-TGT-" + System.nanoTime());
-        target.setBalance(new BigDecimal("0.0000"));
-        target.setCurrency("EUR");
-        target.setStatus(Account.Status.ACTIVE);
-        target.setOwner(u);
-        targetId = accountRepository.save(target).getId();
+        sourceId = MockMvcTestSupport.persistAccount(accountRepository, u,
+                "ROLL-SRC-" + System.nanoTime(),
+                new BigDecimal("100.0000"), "EUR", Account.Status.ACTIVE).getId();
+        targetId = MockMvcTestSupport.persistAccount(accountRepository, u,
+                "ROLL-TGT-" + System.nanoTime(),
+                new BigDecimal("0.0000"), "EUR", Account.Status.ACTIVE).getId();
     }
 
     @AfterEach
@@ -104,13 +86,7 @@ class TransferRollbackIntegrationTest {
 
     @Test
     void transferRollsBackBothBalancesWhenTransactionPersistFails() throws Exception {
-        LoginRequest loginReq = new LoginRequest(EMAIL, PASSWORD);
-        String loginBody = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginReq)))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        String token = "Bearer " + objectMapper.readValue(loginBody, LoginResponse.class).token();
+        String token = MockMvcTestSupport.bearerToken(mockMvc, objectMapper, EMAIL, PASSWORD);
 
         TransferRequest req = new TransferRequest(sourceId, targetId, new BigDecimal("30.00"), "boom");
 

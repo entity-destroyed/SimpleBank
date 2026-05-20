@@ -9,8 +9,7 @@ import hu.bme.aut.simplebank.entity.AppUser;
 import hu.bme.aut.simplebank.exception.ResourceNotFoundException;
 import hu.bme.aut.simplebank.repository.AccountRepository;
 import hu.bme.aut.simplebank.repository.TransactionRepository;
-import hu.bme.aut.simplebank.security.UserDetailsImpl;
-import org.springframework.security.access.AccessDeniedException;
+import hu.bme.aut.simplebank.util.AuthUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,8 +20,6 @@ import java.util.List;
 
 @Service
 public class AccountService {
-
-    static final String ROLE_ADMIN_AUTHORITY = "ROLE_ADMIN";
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
@@ -39,7 +36,7 @@ public class AccountService {
 
     @Transactional
     public AccountResponse create(CreateAccountRequest request, UserDetails caller) {
-        AppUser owner = requireCurrentUser(caller);
+        AppUser owner = AuthUtils.requireCurrentUser(caller);
         Account account = new Account();
         account.setAccountNumber(generateAccountNumber());
         account.setBalance(BigDecimal.ZERO);
@@ -51,8 +48,8 @@ public class AccountService {
 
     @Transactional(readOnly = true)
     public List<AccountResponse> findAll(UserDetails caller) {
-        AppUser current = requireCurrentUser(caller);
-        List<Account> accounts = hasAdminAuthority(caller)
+        AppUser current = AuthUtils.requireCurrentUser(caller);
+        List<Account> accounts = AuthUtils.hasAdminAuthority(caller)
                 ? accountRepository.findAll()
                 : accountRepository.findByOwnerId(current.getId());
         return accountMapper.toResponseList(accounts);
@@ -60,18 +57,15 @@ public class AccountService {
 
     @Transactional(readOnly = true)
     public AccountResponse findById(Long id, UserDetails caller) {
-        AppUser current = requireCurrentUser(caller);
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + id));
-        if (!hasAdminAuthority(caller) && !account.getOwner().getId().equals(current.getId())) {
-            throw new AccessDeniedException("Not your account");
-        }
+        AuthUtils.requireOwnerOrAdmin(caller, account.getOwner().getId(), "Not your account");
         return accountMapper.toResponse(account);
     }
 
     @Transactional
     public AccountResponse updateStatus(Long id, UpdateAccountStatusRequest request, UserDetails caller) {
-        requireAdmin(caller);
+        AuthUtils.requireAdmin(caller);
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + id));
         account.setStatus(request.status());
@@ -80,7 +74,7 @@ public class AccountService {
 
     @Transactional
     public void deleteAccount(Long id, UserDetails caller) {
-        requireAdmin(caller);
+        AuthUtils.requireAdmin(caller);
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + id));
         if (transactionRepository.existsBySourceAccountIdOrTargetAccountId(id, id)) {
@@ -95,24 +89,5 @@ public class AccountService {
         StringBuilder sb = new StringBuilder("HU");
         for (int i = 0; i < 14; i++) sb.append(random.nextInt(10));
         return sb.toString();
-    }
-
-    static boolean hasAdminAuthority(UserDetails caller) {
-        if (caller == null) return false;
-        return caller.getAuthorities().stream()
-                .anyMatch(a -> ROLE_ADMIN_AUTHORITY.equals(a.getAuthority()));
-    }
-
-    private void requireAdmin(UserDetails caller) {
-        if (!hasAdminAuthority(caller)) {
-            throw new AccessDeniedException("Admin role required");
-        }
-    }
-
-    private AppUser requireCurrentUser(UserDetails caller) {
-        if (caller instanceof UserDetailsImpl impl) {
-            return impl.getUser();
-        }
-        throw new AccessDeniedException("Authentication required");
     }
 }
