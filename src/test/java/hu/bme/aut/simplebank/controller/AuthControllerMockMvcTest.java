@@ -72,6 +72,16 @@ class AuthControllerMockMvcTest {
     }
 
     @Test
+    void unknownEmailReturnsUnauthorized() throws Exception {
+        LoginRequest req = new LoginRequest("does-not-exist@bank.local", PASSWORD);
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void wrongPasswordReturnsUnauthorized() throws Exception {
         LoginRequest req = new LoginRequest(EMAIL, "wrong-password");
 

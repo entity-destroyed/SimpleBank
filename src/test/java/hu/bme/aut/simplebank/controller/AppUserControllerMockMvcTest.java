@@ -170,6 +170,27 @@ class AppUserControllerMockMvcTest {
     }
 
     @Test
+    void adminCanFetchUserById() throws Exception {
+        String adminToken = login(ADMIN_EMAIL, ADMIN_PASSWORD);
+
+        mockMvc.perform(get("/api/users/" + clientId)
+                        .header("Authorization", adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(clientId))
+                .andExpect(jsonPath("$.email").value(CLIENT_EMAIL));
+    }
+
+    @Test
+    void unknownPathReturns404FromHandler() throws Exception {
+        String adminToken = login(ADMIN_EMAIL, ADMIN_PASSWORD);
+
+        mockMvc.perform(get("/api/users/this-is-not-a-real-route/extra")
+                        .header("Authorization", adminToken))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
+
+    @Test
     void clientCannotFetchAnotherUserById() throws Exception {
         String clientToken = login(CLIENT_EMAIL, CLIENT_PASSWORD);
 
