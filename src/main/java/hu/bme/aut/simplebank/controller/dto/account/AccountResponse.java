@@ -12,4 +12,5 @@ public record AccountResponse(
         Account.Status status,
         Long ownerId
 ) {
+
 }

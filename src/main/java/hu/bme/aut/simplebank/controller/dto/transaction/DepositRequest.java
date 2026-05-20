@@ -20,4 +20,5 @@ public record DepositRequest(
         @Length(max = 255)
         String message
 ) {
+
 }

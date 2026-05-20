@@ -8,4 +8,5 @@ public record UpdateAccountStatusRequest(
         @NotNull
         Account.Status status
 ) {
+
 }

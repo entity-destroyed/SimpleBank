@@ -11,4 +11,5 @@ public record UpdateCardLimitRequest(
         @DecimalMin("0.0")
         BigDecimal dailyLimit
 ) {
+
 }

@@ -16,4 +16,5 @@ public record CreateCardRequest(
         @DecimalMin("0.0")
         BigDecimal dailyLimit
 ) {
+
 }

@@ -24,4 +24,5 @@ public record TransferRequest(
         @Length(max = 255)
         String message
 ) {
+
 }

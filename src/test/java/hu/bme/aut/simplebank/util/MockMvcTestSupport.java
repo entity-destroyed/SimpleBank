@@ -22,21 +22,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public final class MockMvcTestSupport {
 
-    private MockMvcTestSupport() {}
-
-    public static MockMvc buildMockMvc(WebApplicationContext context) {
-        return MockMvcBuilders
-                .webAppContextSetup(context)
-                .apply(springSecurity())
-                .build();
+    private MockMvcTestSupport() {
     }
 
-    public static AppUser persistUser(AppUserRepository repo,
-                                      PasswordEncoder encoder,
-                                      String name,
-                                      String email,
-                                      String password,
-                                      AppUser.Role role) {
+    public static MockMvc buildMockMvc(WebApplicationContext context) {
+        return MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+    }
+
+    public static AppUser persistUser(AppUserRepository repo, PasswordEncoder encoder, String name, String email,
+                                      String password, AppUser.Role role) {
         AppUser u = new AppUser();
         u.setName(name);
         u.setEmail(email);
@@ -45,12 +39,8 @@ public final class MockMvcTestSupport {
         return repo.save(u);
     }
 
-    public static Account persistAccount(AccountRepository repo,
-                                         AppUser owner,
-                                         String accountNumber,
-                                         BigDecimal balance,
-                                         String currency,
-                                         Account.Status status) {
+    public static Account persistAccount(AccountRepository repo, AppUser owner, String accountNumber,
+                                         BigDecimal balance, String currency, Account.Status status) {
         Account a = new Account();
         a.setAccountNumber(accountNumber);
         a.setBalance(balance);
@@ -64,18 +54,12 @@ public final class MockMvcTestSupport {
         return persistAccount(repo, owner, accountNumber, BigDecimal.ZERO, "HUF", Account.Status.ACTIVE);
     }
 
-    public static String bearerToken(MockMvc mockMvc,
-                                     ObjectMapper objectMapper,
-                                     String email,
-                                     String password) throws Exception {
+    public static String bearerToken(MockMvc mockMvc, ObjectMapper objectMapper, String email, String password) throws Exception {
         LoginRequest req = new LoginRequest(email, password);
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isOk())
-                .andReturn();
-        LoginResponse body = objectMapper.readValue(
-                result.getResponse().getContentAsString(), LoginResponse.class);
+        MvcResult result =
+                mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req))).andExpect(status().isOk()).andReturn();
+        LoginResponse body = objectMapper.readValue(result.getResponse().getContentAsString(), LoginResponse.class);
         return "Bearer " + body.token();
     }
 }

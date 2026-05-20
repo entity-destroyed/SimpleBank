@@ -14,4 +14,5 @@ public record UpdateProfileRequest(
         @Email
         String email
 ) {
+
 }

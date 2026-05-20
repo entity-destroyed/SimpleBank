@@ -14,4 +14,5 @@ public record TransactionResponse(
         Long sourceAccountId,
         Long targetAccountId
 ) {
+
 }

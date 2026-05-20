@@ -10,4 +10,5 @@ public record CardResponse(
         BigDecimal dailyLimit,
         Long accountId
 ) {
+
 }

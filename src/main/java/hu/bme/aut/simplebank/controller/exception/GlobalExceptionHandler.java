@@ -1,11 +1,6 @@
 package hu.bme.aut.simplebank.controller.exception;
 
-import hu.bme.aut.simplebank.exception.AccountNotFoundException;
-import hu.bme.aut.simplebank.exception.ConflictException;
-import hu.bme.aut.simplebank.exception.CurrencyMismatchException;
-import hu.bme.aut.simplebank.exception.InsufficientFundsException;
-import hu.bme.aut.simplebank.exception.InvalidAccountStateException;
-import hu.bme.aut.simplebank.exception.ResourceNotFoundException;
+import hu.bme.aut.simplebank.exception.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;

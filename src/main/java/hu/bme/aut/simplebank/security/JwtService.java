@@ -2,8 +2,8 @@ package hu.bme.aut.simplebank.security;
 
 import hu.bme.aut.simplebank.entity.AppUser;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;

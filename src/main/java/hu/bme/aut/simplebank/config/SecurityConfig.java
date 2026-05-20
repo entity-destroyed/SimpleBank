@@ -31,28 +31,30 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService,
+                                                       PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         return new ProviderManager(provider);
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService, UserDetailsService userDetailsService) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
+                                                   UserDetailsService userDetailsService) {
 
         JwtFilter jwtFilter = new JwtFilter(jwtService, userDetailsService);
 
         http.csrf(AbstractHttpConfigurer::disable)
-            .cors(Customizer.withDefaults())
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-            .authorizeHttpRequests(auth -> {
-                auth.requestMatchers("/api/auth/**").permitAll();
-                auth.requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN");
-                auth.requestMatchers(HttpMethod.DELETE, "/api/users/**", "/api/accounts/**").hasRole("ADMIN");
-                auth.requestMatchers("/api/accounts/*/status").hasRole("ADMIN");
-                auth.anyRequest().authenticated();
-        }).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .cors(Customizer.withDefaults())
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers("/api/auth/**").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN");
+                    auth.requestMatchers(HttpMethod.DELETE, "/api/users/**", "/api/accounts/**").hasRole("ADMIN");
+                    auth.requestMatchers("/api/accounts/*/status").hasRole("ADMIN");
+                    auth.anyRequest().authenticated();
+                }).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

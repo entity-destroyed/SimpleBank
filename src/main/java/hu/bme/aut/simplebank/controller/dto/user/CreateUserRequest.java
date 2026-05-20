@@ -23,4 +23,5 @@ public record CreateUserRequest(
         @NotNull
         AppUser.Role role
 ) {
+
 }

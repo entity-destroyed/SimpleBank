@@ -9,7 +9,8 @@ import java.time.LocalDate;
 
 public final class TestEntities {
 
-    private TestEntities() {}
+    private TestEntities() {
+    }
 
     public static AppUser user(Long id, String email, AppUser.Role role) {
         AppUser u = new AppUser();

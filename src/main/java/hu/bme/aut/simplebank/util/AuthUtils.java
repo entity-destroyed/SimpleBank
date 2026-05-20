@@ -9,7 +9,8 @@ public final class AuthUtils {
 
     public static final String ROLE_ADMIN_AUTHORITY = "ROLE_ADMIN";
 
-    private AuthUtils() {}
+    private AuthUtils() {
+    }
 
     public static boolean hasAdminAuthority(UserDetails caller) {
         if (caller == null) return false;
