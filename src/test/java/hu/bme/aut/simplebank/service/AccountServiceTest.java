@@ -8,6 +8,7 @@ import hu.bme.aut.simplebank.entity.Account;
 import hu.bme.aut.simplebank.entity.AppUser;
 import hu.bme.aut.simplebank.exception.ResourceNotFoundException;
 import hu.bme.aut.simplebank.repository.AccountRepository;
+import hu.bme.aut.simplebank.repository.TransactionRepository;
 import hu.bme.aut.simplebank.security.UserDetailsImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,9 @@ class AccountServiceTest {
 
     @Mock
     private AccountRepository accountRepository;
+
+    @Mock
+    private TransactionRepository transactionRepository;
 
     @Mock
     private AccountMapper accountMapper;
@@ -222,24 +226,40 @@ class AccountServiceTest {
 
 
     @Test
-    void deleteAccountAdminHappyPath() {
-        when(accountRepository.existsById(10L)).thenReturn(true);
+    void deleteAccountAdminHardDeletesWhenNoTransactions() {
+        Account a = ownedBy(client, 10L);
+        when(accountRepository.findById(10L)).thenReturn(Optional.of(a));
+        when(transactionRepository.existsBySourceAccountIdOrTargetAccountId(10L, 10L)).thenReturn(false);
 
         service.deleteAccount(10L, adminPrincipal);
 
-        verify(accountRepository).deleteById(10L);
+        verify(accountRepository).delete(a);
+        verify(accountRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteAccountAdminSoftClosesWhenTransactionsExist() {
+        Account a = ownedBy(client, 10L);
+        when(accountRepository.findById(10L)).thenReturn(Optional.of(a));
+        when(transactionRepository.existsBySourceAccountIdOrTargetAccountId(10L, 10L)).thenReturn(true);
+
+        service.deleteAccount(10L, adminPrincipal);
+
+        assertEquals(Account.Status.CLOSED, a.getStatus());
+        verify(accountRepository).save(a);
+        verify(accountRepository, never()).delete(any(Account.class));
     }
 
     @Test
     void deleteAccountReturnsNotFound() {
-        when(accountRepository.existsById(99L)).thenReturn(false);
+        when(accountRepository.findById(99L)).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class, () -> service.deleteAccount(99L, adminPrincipal));
-        verify(accountRepository, never()).deleteById(any());
+        verify(accountRepository, never()).delete(any(Account.class));
     }
 
     @Test
     void deleteAccountForbiddenForClient() {
         assertThrows(AccessDeniedException.class, () -> service.deleteAccount(10L, clientPrincipal));
-        verify(accountRepository, never()).deleteById(any());
+        verify(accountRepository, never()).delete(any(Account.class));
     }
 }

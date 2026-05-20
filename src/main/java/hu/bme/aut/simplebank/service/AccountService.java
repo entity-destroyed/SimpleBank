@@ -8,6 +8,7 @@ import hu.bme.aut.simplebank.entity.Account;
 import hu.bme.aut.simplebank.entity.AppUser;
 import hu.bme.aut.simplebank.exception.ResourceNotFoundException;
 import hu.bme.aut.simplebank.repository.AccountRepository;
+import hu.bme.aut.simplebank.repository.TransactionRepository;
 import hu.bme.aut.simplebank.security.UserDetailsImpl;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,11 +25,15 @@ public class AccountService {
     static final String ROLE_ADMIN_AUTHORITY = "ROLE_ADMIN";
 
     private final AccountRepository accountRepository;
+    private final TransactionRepository transactionRepository;
     private final AccountMapper accountMapper;
     private final SecureRandom random = new SecureRandom();
 
-    public AccountService(AccountRepository accountRepository, AccountMapper accountMapper) {
+    public AccountService(AccountRepository accountRepository,
+                          TransactionRepository transactionRepository,
+                          AccountMapper accountMapper) {
         this.accountRepository = accountRepository;
+        this.transactionRepository = transactionRepository;
         this.accountMapper = accountMapper;
     }
 
@@ -76,10 +81,14 @@ public class AccountService {
     @Transactional
     public void deleteAccount(Long id, UserDetails caller) {
         requireAdmin(caller);
-        if (!accountRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Account not found: " + id);
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + id));
+        if (transactionRepository.existsBySourceAccountIdOrTargetAccountId(id, id)) {
+            account.setStatus(Account.Status.CLOSED);
+            accountRepository.save(account);
+            return;
         }
-        accountRepository.deleteById(id);
+        accountRepository.delete(account);
     }
 
     private String generateAccountNumber() {
