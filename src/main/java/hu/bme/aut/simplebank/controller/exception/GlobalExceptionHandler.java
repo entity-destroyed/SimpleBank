@@ -1,6 +1,10 @@
 package hu.bme.aut.simplebank.controller.exception;
 
+import hu.bme.aut.simplebank.exception.AccountNotFoundException;
 import hu.bme.aut.simplebank.exception.ConflictException;
+import hu.bme.aut.simplebank.exception.CurrencyMismatchException;
+import hu.bme.aut.simplebank.exception.InsufficientFundsException;
+import hu.bme.aut.simplebank.exception.InvalidAccountStateException;
 import hu.bme.aut.simplebank.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +55,30 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleConflict(ConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ErrorResponseDTO.of(ex.getMessage(), "CONFLICT"));
+    }
+
+    @ExceptionHandler(AccountNotFoundException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAccountNotFound(AccountNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponseDTO.of(ex.getMessage(), "ACCOUNT_NOT_FOUND"));
+    }
+
+    @ExceptionHandler(InsufficientFundsException.class)
+    public ResponseEntity<ErrorResponseDTO> handleInsufficientFunds(InsufficientFundsException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponseDTO.of(ex.getMessage(), "INSUFFICIENT_FUNDS"));
+    }
+
+    @ExceptionHandler(InvalidAccountStateException.class)
+    public ResponseEntity<ErrorResponseDTO> handleInvalidAccountState(InvalidAccountStateException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponseDTO.of(ex.getMessage(), "INVALID_ACCOUNT_STATE"));
+    }
+
+    @ExceptionHandler(CurrencyMismatchException.class)
+    public ResponseEntity<ErrorResponseDTO> handleCurrencyMismatch(CurrencyMismatchException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponseDTO.of(ex.getMessage(), "CURRENCY_MISMATCH"));
     }
 
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
